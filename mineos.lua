@@ -17,6 +17,16 @@ function out(message, verbosity)
 	end
 end
 
+function list(iterator)
+	local result = {}
+
+	for item in iterator do
+		table.insert(result, item)
+	end
+
+	return result
+end
+
 github = {}
 github.registration = {}
 
@@ -56,34 +66,36 @@ function github.save_registration(to)
 		local repo = settings[2]
 		local path = settings[3]
 
-		file.writeLine(string.format("%s,%s,%s", user, repo, path))
+		file.writeLine(string.format("%s %s %s %s", programName, user, repo, path))
 	end
 
 	file.close()
 end
 
 function github.load_registration(from)
+	local from = from or config.github._registration_file
 	local file = fs.open(from, "r")
 
-	local line = file.readLine()
-	while line do
-		
-	end
-end
+	if file then
+		local line = file.readLine()
+		while line do
+			local parts = list(string.gmatch(line, "[^%s]+"))
+			local programName = parts[1]
+			local user = parts[2]
+			local repo = parts[3]
+			local path = parts[4]
 
-function github._setup()
-	local register_folder = config.github._register_folder
+			github.register(user, repo, {[programName] = path})
 
-	if not fs.exists(register_folder) then
-		fs.makeDir(register_folder)
-	elseif not fs.isDir(register_folder) then
-		fs.delete(register_folder)
-		fs.makeDir(register_folder)
+			line = file.readLine()
+		end
+
+		file.close()
 	end
 end
 
 function _setup()
-	github._setup()
+	github.load_registration(config.github._registration_file)
 end
 
 _setup()
